@@ -85,23 +85,63 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
         $node = $node_storage->load($node_id);
         
         if ($node) {
-          // Create a sub-request to the actual node path
-          $kernel = \Drupal::service('http_kernel.basic');
-          $sub_request = $request->duplicate();
+          // Check access first
+          $access_granted = false;
+          switch ($action) {
+            case 'edit':
+              $access_granted = $node->access('update');
+              break;
+            case 'delete':
+              $access_granted = $node->access('delete');
+              break;
+            case 'revisions':
+              $access_granted = $node->access('view');
+              break;
+          }
           
-          // Modify the sub-request to point to the node path
-          $node_path = '/node/' . $node_id . '/' . $action;
-          $sub_request->server->set('REQUEST_URI', $node_path);
-          $sub_request->server->set('PATH_INFO', $node_path);
+          if (!$access_granted) {
+            $response = new Response('Access denied', 403);
+            $event->setResponse($response);
+            return;
+          }
           
           try {
-            // Handle the sub-request
-            $response = $kernel->handle($sub_request, HttpKernelInterface::SUB_REQUEST);
+            // Try to render the form directly using Drupal's form builder
+            $form_builder = \Drupal::service('entity.form_builder');
+            $renderer = \Drupal::service('renderer');
             
-            // Return the response directly - this serves the form at the pathauto URL
-            $event->setResponse($response);
+            switch ($action) {
+              case 'edit':
+                // Get the node edit form
+                $form = $form_builder->getForm($node, 'default');
+                break;
+              case 'delete':
+                // Get the node delete form
+                $form = $form_builder->getForm($node, 'delete');
+                break;
+              case 'revisions':
+                // For revisions, redirect is still needed
+                $url = Url::fromRoute('entity.node.version_history', ['node' => $node_id]);
+                $response = new TrustedRedirectResponse($url->toString());
+                $event->setResponse($response);
+                return;
+            }
+            
+            if (isset($form)) {
+              // Render the form and create a proper HTML response
+              $build = [
+                '#theme' => 'page',
+                '#cache' => ['max-age' => 0],
+                'content' => $form,
+              ];
+              
+              $html = $renderer->renderRoot($build);
+              $response = new Response($html);
+              $response->headers->set('Content-Type', 'text/html; charset=UTF-8');
+              $event->setResponse($response);
+            }
           } catch (\Exception $e) {
-            // If sub-request fails, fall back to redirect
+            // If direct rendering fails, fall back to redirect
             $route_name = '';
             switch ($action) {
               case 'edit':
