@@ -1,0 +1,6 @@
+services:
+  pathauto_edit_links.event_subscriber:
+    class: Drupal\pathauto_edit_links\EventSubscriber\PathautoEditSubscriber
+    arguments: ['@path_alias.manager']
+    tags:
+      - { name: event_subscriber }

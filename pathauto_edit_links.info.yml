@@ -1,0 +1,9 @@
+name: 'Pathauto Edit Links'
+type: module
+description: 'Enables edit links to use pathauto aliases instead of node IDs'
+core_version_requirement: ^10 || ^11
+package: 'Custom'
+dependencies:
+  - drupal:node
+  - drupal:path_alias
+  - pathauto:pathauto

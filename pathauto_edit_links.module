@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @file
+ * Contains pathauto_edit_links.module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Url;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_entity_operation_alter().
+ */
+function pathauto_edit_links_entity_operation_alter(array &$operations, EntityInterface $entity) {
+  // Only alter operations for nodes that have path aliases.
+  if ($entity instanceof NodeInterface && isset($operations['edit'])) {
+    $alias_manager = \Drupal::service('path_alias.manager');
+    $path = '/node/' . $entity->id();
+    $alias = $alias_manager->getAliasByPath($path);
+    
+    // If there's an alias different from the system path, modify the edit URL.
+    if ($alias !== $path && !empty($alias) && $alias !== '/') {
+      $operations['edit']['url'] = Url::fromUserInput($alias . '/edit');
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for links.
+ */
+function pathauto_edit_links_preprocess_links(&$variables) {
+  if (isset($variables['links'])) {
+    foreach ($variables['links'] as $key => &$link) {
+      if (isset($link['link']['#url']) && $link['link']['#url'] instanceof Url) {
+        $url = $link['link']['#url'];
+        
+        // Check if this is a node edit URL.
+        if ($url->getRouteName() === 'entity.node.edit_form') {
+          $route_parameters = $url->getRouteParameters();
+          if (isset($route_parameters['node'])) {
+            $node_id = $route_parameters['node'];
+            $alias_manager = \Drupal::service('path_alias.manager');
+            $path = '/node/' . $node_id;
+            $alias = $alias_manager->getAliasByPath($path);
+            
+            // If there's an alias, modify the URL.
+            if ($alias !== $path && !empty($alias) && $alias !== '/') {
+              $link['link']['#url'] = Url::fromUserInput($alias . '/edit');
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_links_alter().
+ */
+function pathauto_edit_links_node_links_alter(array &$links, NodeInterface $entity, array &$context) {
+  // Alter the edit link in node links.
+  if (isset($links['node']['#links']['node-edit'])) {
+    $alias_manager = \Drupal::service('path_alias.manager');
+    $path = '/node/' . $entity->id();
+    $alias = $alias_manager->getAliasByPath($path);
+    
+    if ($alias !== $path && !empty($alias) && $alias !== '/') {
+      $links['node']['#links']['node-edit']['url'] = Url::fromUserInput($alias . '/edit');
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function pathauto_edit_links_menu_local_tasks_alter(&$data, $route_name) {
+  // Only alter local tasks on node canonical pages
+  if ($route_name === 'entity.node.canonical') {
+    $node = \Drupal::routeMatch()->getParameter('node');
+    
+    if ($node && $node instanceof NodeInterface) {
+      $alias_manager = \Drupal::service('path_alias.manager');
+      $path = '/node/' . $node->id();
+      $alias = $alias_manager->getAliasByPath($path);
+      
+      // If there's a valid alias, modify the edit task URL
+      if ($alias !== $path && !empty($alias) && $alias !== '/') {
+        // Check if edit task exists and modify it
+        if (isset($data['tabs'][0]['entity.node.edit_form'])) {
+          $data['tabs'][0]['entity.node.edit_form']['#link']['url'] = Url::fromUri('base:' . $alias . '/edit');
+        }
+        
+        // Also handle delete and other tasks if needed
+        if (isset($data['tabs'][0]['entity.node.delete_form'])) {
+          $data['tabs'][0]['entity.node.delete_form']['#link']['url'] = Url::fromUri('base:' . $alias . '/delete');
+        }
+        
+        // Handle revisions tab
+        if (isset($data['tabs'][0]['entity.node.version_history'])) {
+          $data['tabs'][0]['entity.node.version_history']['#link']['url'] = Url::fromUri('base:' . $alias . '/revisions');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for menu_local_task.
+ * 
+ * Note: This hook is disabled as it was causing URL object errors.
+ * The local task URLs will still use the original format, but the
+ * pathauto URLs will work via the event subscriber redirects.
+ */
+function pathauto_edit_links_preprocess_menu_local_task(&$variables) {
+  // Temporarily disabled to prevent errors
+  // The functionality is handled by hook_menu_local_tasks_alter() instead
+}
