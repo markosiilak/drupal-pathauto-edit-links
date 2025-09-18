@@ -129,9 +129,11 @@ The module now works with **all pathauto aliases** serving forms directly:
 ### 🎯 **How It Works:**
 1. User accesses clean pathauto URL (e.g., `/some-path/edit`)
 2. Module resolves alias to node ID internally
-3. **Serves edit form directly at the pathauto URL** (no redirect!)
-4. User sees edit form with clean URL maintained throughout
-5. Form submissions work properly at the same clean URL
-6. All permissions and access controls preserved
+3. Creates internal sub-request to maintain full page layout and admin theme
+4. **Serves edit form directly at the pathauto URL** (no redirect!)
+5. Replaces internal node URLs with pathauto URLs in the response
+6. User sees properly formatted edit form with clean URL maintained throughout
+7. Form submissions work properly at the same clean URL
+8. All permissions and access controls preserved
 
 The module uses an event subscriber to intercept requests and serve the appropriate node forms directly at the pathauto URLs while preserving all access controls.

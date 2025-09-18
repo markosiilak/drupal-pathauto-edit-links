@@ -85,63 +85,55 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
         $node = $node_storage->load($node_id);
         
         if ($node) {
-          // Check access first
-          $access_granted = false;
-          switch ($action) {
-            case 'edit':
-              $access_granted = $node->access('update');
-              break;
-            case 'delete':
-              $access_granted = $node->access('delete');
-              break;
-            case 'revisions':
-              $access_granted = $node->access('view');
-              break;
-          }
-          
-          if (!$access_granted) {
-            $response = new Response('Access denied', 403);
-            $event->setResponse($response);
-            return;
-          }
-          
           try {
-            // Try to render the form directly using Drupal's form builder
-            $form_builder = \Drupal::service('entity.form_builder');
-            $renderer = \Drupal::service('renderer');
+            // Create a proper sub-request that maintains the full Drupal context
+            $kernel = \Drupal::service('http_kernel');
+            $sub_request = $request->duplicate();
             
-            switch ($action) {
-              case 'edit':
-                // Get the node edit form
-                $form = $form_builder->getForm($node, 'default');
-                break;
-              case 'delete':
-                // Get the node delete form
-                $form = $form_builder->getForm($node, 'delete');
-                break;
-              case 'revisions':
-                // For revisions, redirect is still needed
-                $url = Url::fromRoute('entity.node.version_history', ['node' => $node_id]);
-                $response = new TrustedRedirectResponse($url->toString());
-                $event->setResponse($response);
-                return;
-            }
+            // Set the sub-request to the node edit path
+            $node_path = '/node/' . $node_id . '/' . $action;
+            $sub_request->server->set('REQUEST_URI', $node_path);
+            $sub_request->server->set('PATH_INFO', $node_path);
             
-            if (isset($form)) {
-              // Render the form and create a proper HTML response
-              $build = [
-                '#theme' => 'page',
-                '#cache' => ['max-age' => 0],
-                'content' => $form,
-              ];
+            // Preserve the original request context (session, user, etc.)
+            $sub_request->attributes->set('_controller_request', $request);
+            
+            // Handle the sub-request to get the full page with proper theme and layout
+            $response = $kernel->handle($sub_request, HttpKernelInterface::SUB_REQUEST);
+            
+            // Modify the response content to fix any internal links that point to node URLs
+            if ($response->getStatusCode() === 200) {
+              $content = $response->getContent();
               
-              $html = $renderer->renderRoot($build);
-              $response = new Response($html);
-              $response->headers->set('Content-Type', 'text/html; charset=UTF-8');
-              $event->setResponse($response);
+              // Replace any node URLs in the content with pathauto URLs
+              $content = str_replace(
+                ['/node/' . $node_id . '/edit', '/node/' . $node_id . '/delete', '/node/' . $node_id . '/revisions'],
+                [$alias . '/edit', $alias . '/delete', $alias . '/revisions'],
+                $content
+              );
+              
+              // Also fix form action URLs
+              $content = preg_replace(
+                '/action="[^"]*\/node\/' . $node_id . '\/' . $action . '"/',
+                'action="' . $alias . '/' . $action . '"',
+                $content
+              );
+              
+              $response->setContent($content);
             }
+            
+            // Modify any redirects in the response to use pathauto URLs
+            if ($response->headers->has('location')) {
+              $location = $response->headers->get('location');
+              if (strpos($location, '/node/' . $node_id) !== false) {
+                $new_location = str_replace('/node/' . $node_id, $alias, $location);
+                $response->headers->set('location', $new_location);
+              }
+            }
+            
+            $event->setResponse($response);
           } catch (\Exception $e) {
-            // If direct rendering fails, fall back to redirect
+            // If sub-request fails, fall back to redirect
             $route_name = '';
             switch ($action) {
               case 'edit':
