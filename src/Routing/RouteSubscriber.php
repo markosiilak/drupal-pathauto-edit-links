@@ -16,21 +16,17 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    // Modify our routes to exclude admin paths and other system paths
+    // Set very high priority for our routes to ensure they're matched first
     if ($route = $collection->get('pathauto_edit_links.edit_page')) {
-      // Add negative lookahead to exclude admin, user, and other system paths
-      $route->setRequirement('path', '^(?!admin|user|node\/\d+|batch|system).*');
-      $route->setOption('_route_priority', 100);
+      $route->setOption('_route_priority', 1000);
     }
     
     if ($route = $collection->get('pathauto_edit_links.delete_page')) {
-      $route->setRequirement('path', '^(?!admin|user|node\/\d+|batch|system).*');
-      $route->setOption('_route_priority', 100);
+      $route->setOption('_route_priority', 1000);
     }
     
     if ($route = $collection->get('pathauto_edit_links.revisions_page')) {
-      $route->setRequirement('path', '^(?!admin|user|node\/\d+|batch|system).*');
-      $route->setOption('_route_priority', 100);
+      $route->setOption('_route_priority', 1000);
     }
   }
 

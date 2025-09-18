@@ -32,10 +32,12 @@ For example:
 - Before: `https://example.com/node/12/edit`
 - After: `https://example.com/about/edit` (if the node has alias `/about`)
 
-The module also handles other node operations directly:
-- Edit: `/about/edit` serves the node edit form directly
-- Delete: `/about/delete` serves the node delete form directly  
-- Revisions: `/about/revisions` serves the node revisions page directly
+The module also handles other node operations via smart redirects:
+- Edit: `/about/edit` → redirects to `/node/12/edit` 
+- Delete: `/about/delete` → redirects to `/node/12/delete`
+- Revisions: `/about/revisions` → redirects to `/node/12/revisions`
+
+**Note**: The module uses redirects to maintain compatibility with Drupal's form system while enabling clean pathauto URLs for access.
 
 ## Requirements
 
@@ -107,10 +109,19 @@ The module logs no errors and works transparently with existing Drupal functiona
 
 ## Current Implementation
 
-The module now works with **all pathauto aliases**:
-- `/about/edit` - Redirects to `/node/12/edit`
-- `/podcast/episode-name/edit` - Redirects to `/node/XX/edit`
-- `/any-alias/delete` - Redirects to `/node/XX/delete`
-- `/any-alias/revisions` - Redirects to `/node/XX/revisions`
+The module now works with **all pathauto aliases** using smart redirects:
+
+### ✅ **Working Examples:**
+- `/about/edit` → `/node/12/edit` (About page)
+- `/podcast/test-podcast-episode-2/edit` → `/node/20/edit` (Podcast episode)
+- `/any-alias/delete` → `/node/XX/delete` (Any page delete)
+- `/any-alias/revisions` → `/node/XX/revisions` (Any page revisions)
+
+### 🔄 **How It Works:**
+1. User accesses clean pathauto URL (e.g., `/podcast/episode/edit`)
+2. Module resolves alias to node ID
+3. Redirects to appropriate node action URL
+4. User sees edit form with full functionality
+5. All permissions and access controls preserved
 
 The module uses an event subscriber to intercept requests and redirect them to the appropriate node URLs while preserving all access controls.

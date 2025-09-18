@@ -1,2 +1,2 @@
-# Routing disabled - using event subscriber approach instead
-# The generic /{path}/edit routes were causing conflicts with other Drupal routes
+# Routing approach disabled due to conflicts with Drupal core routing
+# Using event subscriber approach instead for better compatibility

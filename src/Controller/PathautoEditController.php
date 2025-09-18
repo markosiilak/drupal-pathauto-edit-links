@@ -180,6 +180,24 @@ class PathautoEditController extends ControllerBase {
   }
 
   /**
+   * Title callback for pathauto edit routes.
+   *
+   * @param string $path
+   *   The path parameter from the URL.
+   *
+   * @return string
+   *   The page title.
+   */
+  public function getTitle($path) {
+    try {
+      $node = $this->getNodeFromPath($path);
+      return $this->t('Edit @title', ['@title' => $node->getTitle()]);
+    } catch (NotFoundHttpException $e) {
+      return $this->t('Edit');
+    }
+  }
+
+  /**
    * Helper method to get a node from a pathauto alias path.
    *
    * @param string $path
