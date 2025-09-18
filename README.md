@@ -103,8 +103,9 @@ The module logs no errors and works transparently with existing Drupal functiona
 
 ## Known Limitations
 
-- Local task tabs (Edit, Delete, Revisions) may still show the original `/node/ID/action` format in the HTML
-- The `hook_preprocess_menu_local_task()` is currently disabled to prevent URL object conflicts
+- Local task tabs (Edit, Delete, Revisions) will show the original `/node/ID/action` format in the HTML
+- The `hook_menu_local_tasks_alter()` is disabled to prevent conflicts with webform module
+- The `hook_preprocess_menu_local_task()` is disabled to prevent URL object conflicts
 - Admin paths and system paths are excluded to prevent conflicts
 - Form submissions may require additional handling for complex field types
 
@@ -114,12 +115,12 @@ The module now works with **all pathauto aliases** serving forms directly:
 
 ### ✅ **Working Examples:**
 - `/about/edit` - Edit form served directly at this URL ✅
-- `/podcast/test-podcast-episode-2/edit` - Edit form served directly at this URL ✅
+- `/podcast/test-podcast/edit` - Edit form served directly at this URL ✅
 - `/any-alias/delete` - Delete form served directly at this URL ✅
 - `/any-alias/revisions` - Revisions page served directly at this URL ✅
 
 ### 🎯 **How It Works:**
-1. User accesses clean pathauto URL (e.g., `/podcast/test-podcast-episode-2/edit`)
+1. User accesses clean pathauto URL (e.g., `/some-path/edit`)
 2. Module resolves alias to node ID internally
 3. **Serves edit form directly at the pathauto URL** (no redirect!)
 4. User sees edit form with clean URL maintained throughout

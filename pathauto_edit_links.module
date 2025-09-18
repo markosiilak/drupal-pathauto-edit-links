@@ -73,36 +73,15 @@ function pathauto_edit_links_node_links_alter(array &$links, NodeInterface $enti
 
 /**
  * Implements hook_menu_local_tasks_alter().
+ * 
+ * Temporarily disabled to prevent conflicts with webform module.
+ * The pathauto edit URLs work via the event subscriber.
  */
 function pathauto_edit_links_menu_local_tasks_alter(&$data, $route_name) {
-  // Only alter local tasks on node canonical pages
-  if ($route_name === 'entity.node.canonical') {
-    $node = \Drupal::routeMatch()->getParameter('node');
-    
-    if ($node && $node instanceof NodeInterface) {
-      $alias_manager = \Drupal::service('path_alias.manager');
-      $path = '/node/' . $node->id();
-      $alias = $alias_manager->getAliasByPath($path);
-      
-      // If there's a valid alias, modify the edit task URL
-      if ($alias !== $path && !empty($alias) && $alias !== '/') {
-        // Check if edit task exists and modify it
-        if (isset($data['tabs'][0]['entity.node.edit_form'])) {
-          $data['tabs'][0]['entity.node.edit_form']['#link']['url'] = Url::fromUri('base:' . $alias . '/edit');
-        }
-        
-        // Also handle delete and other tasks if needed
-        if (isset($data['tabs'][0]['entity.node.delete_form'])) {
-          $data['tabs'][0]['entity.node.delete_form']['#link']['url'] = Url::fromUri('base:' . $alias . '/delete');
-        }
-        
-        // Handle revisions tab
-        if (isset($data['tabs'][0]['entity.node.version_history'])) {
-          $data['tabs'][0]['entity.node.version_history']['#link']['url'] = Url::fromUri('base:' . $alias . '/revisions');
-        }
-      }
-    }
-  }
+  // Disabled to prevent webform module conflicts
+  // The edit links in the UI will still use the original format,
+  // but the pathauto URLs work via the event subscriber
+  return;
 }
 
 /**
