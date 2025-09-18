@@ -1,26 +1,2 @@
-pathauto_edit_links.edit_page:
-  path: '/about/edit'
-  defaults:
-    _controller: '\Drupal\pathauto_edit_links\Controller\PathautoEditController::editPage'
-    _title: 'Edit'
-    path: 'about'
-  requirements:
-    _permission: 'access content'
-
-pathauto_edit_links.delete_page:
-  path: '/about/delete'
-  defaults:
-    _controller: '\Drupal\pathauto_edit_links\Controller\PathautoEditController::deletePage'
-    _title: 'Delete'
-    path: 'about'
-  requirements:
-    _permission: 'access content'
-
-pathauto_edit_links.revisions_page:
-  path: '/about/revisions'
-  defaults:
-    _controller: '\Drupal\pathauto_edit_links\Controller\PathautoEditController::revisionsPage'
-    _title: 'Revisions'
-    path: 'about'
-  requirements:
-    _permission: 'access content'
+# Routing disabled - using event subscriber approach instead
+# The generic /{path}/edit routes were causing conflicts with other Drupal routes

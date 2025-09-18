@@ -18,11 +18,11 @@ This module enables node edit links to use pathauto aliases instead of the defau
    - `hook_menu_local_tasks_alter()` - Alters local task tabs (Edit, Delete, Revisions)
    - `hook_preprocess_menu_local_task()` - Ensures theme-level local task URLs use aliases
 
-2. **Direct Routing**: The module provides direct URL handling for pathauto aliases:
-   - Routes: `/about/edit`, `/about/delete`, `/about/revisions`
-   - Controller serves the edit/delete forms directly without redirects
+2. **Event-Based Redirects**: The module provides URL handling for pathauto aliases:
+   - Intercepts: `/any-alias/edit`, `/any-alias/delete`, `/any-alias/revisions`
+   - Event subscriber redirects to appropriate node URLs
    - Preserves all Drupal access control and permission checking
-   - URLs like `/about/edit` serve the node edit form directly at that URL
+   - Works with all existing pathauto aliases automatically
 
 ## Usage
 
@@ -80,14 +80,17 @@ The module logs no errors and works transparently with existing Drupal functiona
 
 ## Known Limitations
 
-- Currently configured for `/about` path only (can be extended for other aliases)
+- Uses redirects instead of serving forms directly at pathauto URLs (for compatibility)
 - Local task tabs (Edit, Delete, Revisions) may still show the original `/node/ID/action` format in the HTML
 - The `hook_preprocess_menu_local_task()` is currently disabled to prevent URL object conflicts
-- Revisions page still redirects to the system URL due to complexity
+- Admin paths and system paths are excluded to prevent conflicts
 
 ## Current Implementation
 
-The module is currently set up specifically for the `/about` page:
-- `/about/edit` - Direct node edit form (no redirect)
-- `/about/delete` - Direct node delete form (no redirect)
-- `/about/revisions` - Redirects to node revisions page
+The module now works with **all pathauto aliases**:
+- `/about/edit` - Redirects to `/node/12/edit`
+- `/podcast/episode-name/edit` - Redirects to `/node/XX/edit`
+- `/any-alias/delete` - Redirects to `/node/XX/delete`
+- `/any-alias/revisions` - Redirects to `/node/XX/revisions`
+
+The module uses an event subscriber to intercept requests and redirect them to the appropriate node URLs while preserving all access controls.

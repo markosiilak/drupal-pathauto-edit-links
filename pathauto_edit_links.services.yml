@@ -4,3 +4,8 @@ services:
     arguments: ['@path_alias.manager']
     tags:
       - { name: event_subscriber }
+      
+  pathauto_edit_links.route_subscriber:
+    class: Drupal\pathauto_edit_links\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

@@ -2,7 +2,9 @@
 
 namespace Drupal\pathauto_edit_links\Controller;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\path_alias\AliasManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFormBuilderInterface;
@@ -152,6 +154,32 @@ class PathautoEditController extends ControllerBase {
   }
 
   /**
+   * Custom access callback for pathauto edit routes.
+   *
+   * @param string $path
+   *   The path parameter from the URL.
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   The current user account.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
+  public function checkAccess($path, AccountInterface $account) {
+    try {
+      $node = $this->getNodeFromPath($path);
+      
+      // Check if the user has access to edit this node
+      if ($node->access('update', $account)) {
+        return AccessResult::allowed();
+      }
+      
+      return AccessResult::forbidden();
+    } catch (NotFoundHttpException $e) {
+      return AccessResult::forbidden();
+    }
+  }
+
+  /**
    * Helper method to get a node from a pathauto alias path.
    *
    * @param string $path
@@ -164,7 +192,8 @@ class PathautoEditController extends ControllerBase {
    *   If the path doesn't correspond to a valid node.
    */
   private function getNodeFromPath($path) {
-    // Reconstruct the full path
+    // Handle multi-segment paths properly
+    // The path parameter might contain slashes for nested paths like "podcast/test-episode"
     $alias = '/' . $path;
     
     // Get the system path from the alias
@@ -183,7 +212,7 @@ class PathautoEditController extends ControllerBase {
     }
     
     // If we get here, the path doesn't correspond to a valid node
-    throw new NotFoundHttpException();
+    throw new NotFoundHttpException('The requested path "' . $alias . '" does not correspond to a valid node.');
   }
 
 }
