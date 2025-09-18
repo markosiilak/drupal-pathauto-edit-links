@@ -164,12 +164,38 @@ class PathautoEditController extends ControllerBase {
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
-  public function checkAccess($path, AccountInterface $account) {
+  public function checkEditAccess($path, AccountInterface $account) {
     try {
       $node = $this->getNodeFromPath($path);
       
       // Check if the user has access to edit this node
       if ($node->access('update', $account)) {
+        return AccessResult::allowed();
+      }
+      
+      return AccessResult::forbidden();
+    } catch (NotFoundHttpException $e) {
+      return AccessResult::forbidden();
+    }
+  }
+
+  /**
+   * Custom access callback for pathauto delete routes.
+   *
+   * @param string $path
+   *   The path parameter from the URL.
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   The current user account.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
+  public function checkDeleteAccess($path, AccountInterface $account) {
+    try {
+      $node = $this->getNodeFromPath($path);
+      
+      // Check if the user has access to delete this node
+      if ($node->access('delete', $account)) {
         return AccessResult::allowed();
       }
       

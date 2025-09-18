@@ -1,2 +1,2 @@
-# Routing approach disabled due to conflicts with Drupal core routing
-# Using event subscriber approach instead for better compatibility
+# Form-based routing disabled due to conflicts
+# Using event subscriber with direct form serving instead

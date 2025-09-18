@@ -18,11 +18,12 @@ This module enables node edit links to use pathauto aliases instead of the defau
    - `hook_menu_local_tasks_alter()` - Alters local task tabs (Edit, Delete, Revisions)
    - `hook_preprocess_menu_local_task()` - Ensures theme-level local task URLs use aliases
 
-2. **Event-Based Redirects**: The module provides URL handling for pathauto aliases:
+2. **Direct Form Serving**: The module provides direct URL handling for pathauto aliases:
    - Intercepts: `/any-alias/edit`, `/any-alias/delete`, `/any-alias/revisions`
-   - Event subscriber redirects to appropriate node URLs
+   - Event subscriber serves forms directly using internal sub-requests
    - Preserves all Drupal access control and permission checking
    - Works with all existing pathauto aliases automatically
+   - **No redirects** - forms are served directly at clean URLs
 
 ## Usage
 
@@ -32,12 +33,12 @@ For example:
 - Before: `https://example.com/node/12/edit`
 - After: `https://example.com/about/edit` (if the node has alias `/about`)
 
-The module also handles other node operations via smart redirects:
-- Edit: `/about/edit` → redirects to `/node/12/edit` 
-- Delete: `/about/delete` → redirects to `/node/12/delete`
-- Revisions: `/about/revisions` → redirects to `/node/12/revisions`
+The module handles node operations **directly at pathauto URLs**:
+- Edit: `/about/edit` - Edit form served directly (no redirect!)
+- Delete: `/about/delete` - Delete form served directly (no redirect!)
+- Revisions: `/about/revisions` - Revisions page served directly (no redirect!)
 
-**Note**: The module uses redirects to maintain compatibility with Drupal's form system while enabling clean pathauto URLs for access.
+**Note**: The module serves forms directly at clean pathauto URLs using internal sub-requests, maintaining the clean URL throughout the entire editing process.
 
 ## Requirements
 
@@ -102,26 +103,27 @@ The module logs no errors and works transparently with existing Drupal functiona
 
 ## Known Limitations
 
-- Uses redirects instead of serving forms directly at pathauto URLs (for compatibility)
 - Local task tabs (Edit, Delete, Revisions) may still show the original `/node/ID/action` format in the HTML
 - The `hook_preprocess_menu_local_task()` is currently disabled to prevent URL object conflicts
 - Admin paths and system paths are excluded to prevent conflicts
+- Form submissions may require additional handling for complex field types
 
 ## Current Implementation
 
-The module now works with **all pathauto aliases** using smart redirects:
+The module now works with **all pathauto aliases** serving forms directly:
 
 ### ✅ **Working Examples:**
-- `/about/edit` → `/node/12/edit` (About page)
-- `/podcast/test-podcast-episode-2/edit` → `/node/20/edit` (Podcast episode)
-- `/any-alias/delete` → `/node/XX/delete` (Any page delete)
-- `/any-alias/revisions` → `/node/XX/revisions` (Any page revisions)
+- `/about/edit` - Edit form served directly at this URL ✅
+- `/podcast/test-podcast-episode-2/edit` - Edit form served directly at this URL ✅
+- `/any-alias/delete` - Delete form served directly at this URL ✅
+- `/any-alias/revisions` - Revisions page served directly at this URL ✅
 
-### 🔄 **How It Works:**
-1. User accesses clean pathauto URL (e.g., `/podcast/episode/edit`)
-2. Module resolves alias to node ID
-3. Redirects to appropriate node action URL
-4. User sees edit form with full functionality
-5. All permissions and access controls preserved
+### 🎯 **How It Works:**
+1. User accesses clean pathauto URL (e.g., `/podcast/test-podcast-episode-2/edit`)
+2. Module resolves alias to node ID internally
+3. **Serves edit form directly at the pathauto URL** (no redirect!)
+4. User sees edit form with clean URL maintained throughout
+5. Form submissions work properly at the same clean URL
+6. All permissions and access controls preserved
 
-The module uses an event subscriber to intercept requests and redirect them to the appropriate node URLs while preserving all access controls.
+The module uses an event subscriber to intercept requests and serve the appropriate node forms directly at the pathauto URLs while preserving all access controls.

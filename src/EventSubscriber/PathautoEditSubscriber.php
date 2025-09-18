@@ -9,6 +9,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
@@ -52,7 +53,7 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
     $path = $request->getPathInfo();
 
     // Only process paths that end with /edit, /delete, or /revisions
-    // Skip if this is already a /node/ID/action path to prevent redirect loops
+    // Skip if this is already a /node/ID/action path to prevent loops
     if (preg_match('/^\/node\/\d+\/(edit|delete|revisions)$/', $path)) {
       return;
     }
@@ -63,7 +64,7 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
       $action = $matches[2];
       
       // Skip admin paths and other system paths
-      if (preg_match('/^\/?(admin|user|batch|system)/', $alias)) {
+      if (preg_match('/^\/?(admin|user|batch|system|core|modules|themes|sites)/', $alias)) {
         return;
       }
       
@@ -84,24 +85,41 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
         $node = $node_storage->load($node_id);
         
         if ($node) {
-          // Redirect to the appropriate node action
-          $route_name = '';
-          switch ($action) {
-            case 'edit':
-              $route_name = 'entity.node.edit_form';
-              break;
-            case 'delete':
-              $route_name = 'entity.node.delete_form';
-              break;
-            case 'revisions':
-              $route_name = 'entity.node.version_history';
-              break;
-          }
+          // Create a sub-request to the actual node path
+          $kernel = \Drupal::service('http_kernel.basic');
+          $sub_request = $request->duplicate();
           
-          if ($route_name) {
-            $url = Url::fromRoute($route_name, ['node' => $node_id]);
-            $response = new TrustedRedirectResponse($url->toString());
+          // Modify the sub-request to point to the node path
+          $node_path = '/node/' . $node_id . '/' . $action;
+          $sub_request->server->set('REQUEST_URI', $node_path);
+          $sub_request->server->set('PATH_INFO', $node_path);
+          
+          try {
+            // Handle the sub-request
+            $response = $kernel->handle($sub_request, HttpKernelInterface::SUB_REQUEST);
+            
+            // Return the response directly - this serves the form at the pathauto URL
             $event->setResponse($response);
+          } catch (\Exception $e) {
+            // If sub-request fails, fall back to redirect
+            $route_name = '';
+            switch ($action) {
+              case 'edit':
+                $route_name = 'entity.node.edit_form';
+                break;
+              case 'delete':
+                $route_name = 'entity.node.delete_form';
+                break;
+              case 'revisions':
+                $route_name = 'entity.node.version_history';
+                break;
+            }
+            
+            if ($route_name) {
+              $url = Url::fromRoute($route_name, ['node' => $node_id]);
+              $response = new TrustedRedirectResponse($url->toString());
+              $event->setResponse($response);
+            }
           }
         }
       }
