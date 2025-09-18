@@ -46,9 +46,29 @@ The module also handles other node operations directly:
 
 ## Installation
 
-1. Place the module in `web/modules/custom/pathauto_edit_links/`
-2. Enable the module or use drush: `drush en pathauto_edit_links`
-3. Clear cache or use drush: `drush cr`
+### Option 1: Composer (Recommended)
+
+```bash
+composer require markosiilak/drupal-pathauto-edit-links
+drush en pathauto_edit_links
+drush cr
+```
+
+### Option 2: Manual Installation
+
+1. Download the latest release from [GitHub](https://github.com/markosiilak/drupal-pathauto-edit-links/releases)
+2. Extract to `web/modules/custom/pathauto_edit_links/`
+3. Enable the module: `drush en pathauto_edit_links`
+4. Clear cache: `drush cr`
+
+### Option 3: Git Clone
+
+```bash
+cd web/modules/custom/
+git clone https://github.com/markosiilak/drupal-pathauto-edit-links.git
+drush en pathauto_edit_links
+drush cr
+```
 
 ## Configuration
 
