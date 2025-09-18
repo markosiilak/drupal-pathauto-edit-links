@@ -11,12 +11,11 @@ This module enables node edit links to use pathauto aliases instead of the defau
 
 ## How it works
 
-1. **Link Alteration**: The module uses several Drupal hooks to alter edit links:
-   - `hook_entity_operation_alter()` - Alters edit links in entity operation lists
-   - `hook_preprocess_links()` - Alters edit links in rendered link lists
-   - `hook_node_links_alter()` - Alters edit links in node link contexts
-   - `hook_menu_local_tasks_alter()` - Alters local task tabs (Edit, Delete, Revisions)
-   - `hook_preprocess_menu_local_task()` - Ensures theme-level local task URLs use aliases
+1. **Direct URL Handling**: The module intercepts pathauto edit URLs and serves forms directly:
+   - Event subscriber intercepts requests to `/{alias}/edit`, `/{alias}/delete`, `/{alias}/revisions`
+   - Internal sub-requests serve the appropriate node forms
+   - Forms are served directly at clean pathauto URLs without redirects
+   - Link alteration hooks are disabled to prevent conflicts with other modules
 
 2. **Direct Form Serving**: The module provides direct URL handling for pathauto aliases:
    - Intercepts: `/any-alias/edit`, `/any-alias/delete`, `/any-alias/revisions`
@@ -103,11 +102,19 @@ The module logs no errors and works transparently with existing Drupal functiona
 
 ## Known Limitations
 
-- Local task tabs (Edit, Delete, Revisions) will show the original `/node/ID/action` format in the HTML
-- The `hook_menu_local_tasks_alter()` is disabled to prevent conflicts with webform module
-- The `hook_preprocess_menu_local_task()` is disabled to prevent URL object conflicts
+- **Link alteration hooks are disabled** to prevent conflicts with webform and other modules
+- Local task tabs and edit links in the UI will show the original `/node/ID/action` format
+- Only the direct pathauto URLs work (e.g., typing `/about/edit` in browser)
 - Admin paths and system paths are excluded to prevent conflicts
 - Form submissions may require additional handling for complex field types
+
+## Current Focus
+
+The module prioritizes **clean pathauto edit URLs** over UI link modifications to ensure:
+- ✅ No conflicts with other modules (webform, etc.)
+- ✅ No PHP deprecation warnings
+- ✅ Direct form serving at pathauto URLs
+- ✅ Stable, error-free operation
 
 ## Current Implementation
 

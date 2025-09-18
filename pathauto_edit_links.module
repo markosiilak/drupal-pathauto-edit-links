@@ -11,64 +11,32 @@ use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_entity_operation_alter().
+ * 
+ * Temporarily disabled to prevent conflicts with webform module.
  */
 function pathauto_edit_links_entity_operation_alter(array &$operations, EntityInterface $entity) {
-  // Only alter operations for nodes that have path aliases.
-  if ($entity instanceof NodeInterface && isset($operations['edit'])) {
-    $alias_manager = \Drupal::service('path_alias.manager');
-    $path = '/node/' . $entity->id();
-    $alias = $alias_manager->getAliasByPath($path);
-    
-    // If there's an alias different from the system path, modify the edit URL.
-    if ($alias !== $path && !empty($alias) && $alias !== '/') {
-      $operations['edit']['url'] = Url::fromUserInput($alias . '/edit');
-    }
-  }
+  // Disabled to prevent webform module conflicts
+  return;
 }
 
 /**
  * Implements hook_preprocess_HOOK() for links.
+ * 
+ * Temporarily disabled to prevent conflicts with webform module.
  */
 function pathauto_edit_links_preprocess_links(&$variables) {
-  if (isset($variables['links'])) {
-    foreach ($variables['links'] as $key => &$link) {
-      if (isset($link['link']['#url']) && $link['link']['#url'] instanceof Url) {
-        $url = $link['link']['#url'];
-        
-        // Check if this is a node edit URL.
-        if ($url->getRouteName() === 'entity.node.edit_form') {
-          $route_parameters = $url->getRouteParameters();
-          if (isset($route_parameters['node'])) {
-            $node_id = $route_parameters['node'];
-            $alias_manager = \Drupal::service('path_alias.manager');
-            $path = '/node/' . $node_id;
-            $alias = $alias_manager->getAliasByPath($path);
-            
-            // If there's an alias, modify the URL.
-            if ($alias !== $path && !empty($alias) && $alias !== '/') {
-              $link['link']['#url'] = Url::fromUserInput($alias . '/edit');
-            }
-          }
-        }
-      }
-    }
-  }
+  // Disabled to prevent webform module conflicts
+  return;
 }
 
 /**
  * Implements hook_node_links_alter().
+ * 
+ * Temporarily disabled to prevent conflicts with webform module.
  */
 function pathauto_edit_links_node_links_alter(array &$links, NodeInterface $entity, array &$context) {
-  // Alter the edit link in node links.
-  if (isset($links['node']['#links']['node-edit'])) {
-    $alias_manager = \Drupal::service('path_alias.manager');
-    $path = '/node/' . $entity->id();
-    $alias = $alias_manager->getAliasByPath($path);
-    
-    if ($alias !== $path && !empty($alias) && $alias !== '/') {
-      $links['node']['#links']['node-edit']['url'] = Url::fromUserInput($alias . '/edit');
-    }
-  }
+  // Disabled to prevent webform module conflicts
+  return;
 }
 
 /**
