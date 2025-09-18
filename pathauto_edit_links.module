@@ -11,12 +11,19 @@ use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_entity_operation_alter().
- * 
- * Temporarily disabled to prevent conflicts with webform module.
  */
 function pathauto_edit_links_entity_operation_alter(array &$operations, EntityInterface $entity) {
-  // Disabled to prevent webform module conflicts
-  return;
+  // Only alter operations for nodes that have path aliases.
+  if ($entity instanceof NodeInterface && isset($operations['edit'])) {
+    $alias_manager = \Drupal::service('path_alias.manager');
+    $path = '/node/' . $entity->id();
+    $alias = $alias_manager->getAliasByPath($path);
+    
+    // If there's an alias different from the system path, modify the edit URL.
+    if ($alias !== $path && !empty($alias) && $alias !== '/') {
+      $operations['edit']['url'] = Url::fromUserInput($alias . '/edit');
+    }
+  }
 }
 
 /**
@@ -41,25 +48,77 @@ function pathauto_edit_links_node_links_alter(array &$links, NodeInterface $enti
 
 /**
  * Implements hook_menu_local_tasks_alter().
- * 
- * Temporarily disabled to prevent conflicts with webform module.
- * The pathauto edit URLs work via the event subscriber.
  */
 function pathauto_edit_links_menu_local_tasks_alter(&$data, $route_name) {
-  // Disabled to prevent webform module conflicts
-  // The edit links in the UI will still use the original format,
-  // but the pathauto URLs work via the event subscriber
-  return;
+  // Only alter local tasks on node canonical pages
+  if ($route_name === 'entity.node.canonical') {
+    $node = \Drupal::routeMatch()->getParameter('node');
+    
+    if ($node && $node instanceof NodeInterface) {
+      $alias_manager = \Drupal::service('path_alias.manager');
+      $path = '/node/' . $node->id();
+      $alias = $alias_manager->getAliasByPath($path);
+      
+      // If there's a valid alias, modify the task URLs
+      if ($alias !== $path && !empty($alias) && $alias !== '/') {
+        // Check if edit task exists and modify it
+        if (isset($data['tabs'][0]['entity.node.edit_form']['#link']['url'])) {
+          $data['tabs'][0]['entity.node.edit_form']['#link']['url'] = Url::fromUserInput($alias . '/edit');
+        }
+        
+        // Also handle delete and other tasks
+        if (isset($data['tabs'][0]['entity.node.delete_form']['#link']['url'])) {
+          $data['tabs'][0]['entity.node.delete_form']['#link']['url'] = Url::fromUserInput($alias . '/delete');
+        }
+        
+        // Handle revisions tab
+        if (isset($data['tabs'][0]['entity.node.version_history']['#link']['url'])) {
+          $data['tabs'][0]['entity.node.version_history']['#link']['url'] = Url::fromUserInput($alias . '/revisions');
+        }
+      }
+    }
+  }
 }
 
 /**
  * Implements hook_preprocess_HOOK() for menu_local_task.
- * 
- * Note: This hook is disabled as it was causing URL object errors.
- * The local task URLs will still use the original format, but the
- * pathauto URLs will work via the event subscriber redirects.
  */
 function pathauto_edit_links_preprocess_menu_local_task(&$variables) {
-  // Temporarily disabled to prevent errors
-  // The functionality is handled by hook_menu_local_tasks_alter() instead
+  // Get the current node from the route
+  $node = \Drupal::routeMatch()->getParameter('node');
+  
+  if ($node && $node instanceof NodeInterface) {
+    $alias_manager = \Drupal::service('path_alias.manager');
+    $path = '/node/' . $node->id();
+    $alias = $alias_manager->getAliasByPath($path);
+    
+    // If there's a valid alias, modify the task URL
+    if ($alias !== $path && !empty($alias) && $alias !== '/') {
+      // Check if the link exists and is a URL object
+      if (isset($variables['link']['#url']) && $variables['link']['#url'] instanceof \Drupal\Core\Url) {
+        try {
+          $route_name = $variables['link']['#url']->getRouteName();
+          $route_params = $variables['link']['#url']->getRouteParameters();
+          
+          // Only modify if this is for the same node
+          if (isset($route_params['node']) && $route_params['node'] == $node->id()) {
+            // Create new URLs for the tabs
+            switch ($route_name) {
+              case 'entity.node.edit_form':
+                $variables['link']['#url'] = Url::fromUserInput($alias . '/edit');
+                break;
+              case 'entity.node.delete_form':
+                $variables['link']['#url'] = Url::fromUserInput($alias . '/delete');
+                break;
+              case 'entity.node.version_history':
+                $variables['link']['#url'] = Url::fromUserInput($alias . '/revisions');
+                break;
+            }
+          }
+        } catch (\Exception $e) {
+          // If there's an error, skip the modification to prevent site breakage
+        }
+      }
+    }
+  }
 }
