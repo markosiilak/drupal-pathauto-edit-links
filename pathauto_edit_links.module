@@ -13,8 +13,18 @@ use Drupal\node\NodeInterface;
  * Implements hook_entity_operation_alter().
  */
 function pathauto_edit_links_entity_operation_alter(array &$operations, EntityInterface $entity) {
+  // Skip webform entities to prevent conflicts
+  if ($entity->getEntityTypeId() === 'webform' || $entity->getEntityTypeId() === 'webform_submission') {
+    return;
+  }
+  
   // Only alter operations for nodes that have path aliases.
   if ($entity instanceof NodeInterface && isset($operations['edit'])) {
+    // Skip webform nodes
+    if ($entity->hasField('webform') || $entity->bundle() === 'webform') {
+      return;
+    }
+    
     $alias_manager = \Drupal::service('path_alias.manager');
     $path = '/node/' . $entity->id();
     $alias = $alias_manager->getAliasByPath($path);
@@ -50,11 +60,21 @@ function pathauto_edit_links_node_links_alter(array &$links, NodeInterface $enti
  * Implements hook_menu_local_tasks_alter().
  */
 function pathauto_edit_links_menu_local_tasks_alter(&$data, $route_name) {
+  // Skip webform-related routes to prevent conflicts
+  if (strpos($route_name, 'webform') !== false) {
+    return;
+  }
+  
   // Only alter local tasks on node canonical pages
   if ($route_name === 'entity.node.canonical') {
     $node = \Drupal::routeMatch()->getParameter('node');
     
     if ($node && $node instanceof NodeInterface) {
+      // Skip webform nodes
+      if ($node->hasField('webform') || $node->bundle() === 'webform') {
+        return;
+      }
+      
       $alias_manager = \Drupal::service('path_alias.manager');
       $path = '/node/' . $node->id();
       $alias = $alias_manager->getAliasByPath($path);
@@ -84,10 +104,21 @@ function pathauto_edit_links_menu_local_tasks_alter(&$data, $route_name) {
  * Implements hook_preprocess_HOOK() for menu_local_task.
  */
 function pathauto_edit_links_preprocess_menu_local_task(&$variables) {
+  // Skip if this is a webform-related route to prevent conflicts
+  $current_route = \Drupal::routeMatch()->getRouteName();
+  if ($current_route && strpos($current_route, 'webform') !== false) {
+    return;
+  }
+  
   // Get the current node from the route
   $node = \Drupal::routeMatch()->getParameter('node');
   
   if ($node && $node instanceof NodeInterface) {
+    // Skip webform nodes
+    if ($node->hasField('webform') || $node->bundle() === 'webform') {
+      return;
+    }
+    
     $alias_manager = \Drupal::service('path_alias.manager');
     $path = '/node/' . $node->id();
     $alias = $alias_manager->getAliasByPath($path);
@@ -98,6 +129,12 @@ function pathauto_edit_links_preprocess_menu_local_task(&$variables) {
       if (isset($variables['link']['#url']) && $variables['link']['#url'] instanceof \Drupal\Core\Url) {
         try {
           $route_name = $variables['link']['#url']->getRouteName();
+          
+          // Skip webform-related routes
+          if ($route_name && strpos($route_name, 'webform') !== false) {
+            return;
+          }
+          
           $route_params = $variables['link']['#url']->getRouteParameters();
           
           // Only modify if this is for the same node

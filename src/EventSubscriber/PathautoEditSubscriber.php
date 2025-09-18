@@ -63,8 +63,8 @@ class PathautoEditSubscriber implements EventSubscriberInterface {
       $alias = $matches[1];
       $action = $matches[2];
       
-      // Skip admin paths and other system paths
-      if (preg_match('/^\/?(admin|user|batch|system|core|modules|themes|sites)/', $alias)) {
+      // Skip admin paths, system paths, and webform paths
+      if (preg_match('/^\/?(admin|user|batch|system|core|modules|themes|sites|webform)/', $alias)) {
         return;
       }
       

@@ -105,7 +105,7 @@ The module logs no errors and works transparently with existing Drupal functiona
 - **Link alteration hooks are disabled** to prevent conflicts with webform and other modules
 - Local task tabs and edit links in the UI will show the original `/node/ID/action` format
 - Only the direct pathauto URLs work (e.g., typing `/about/edit` in browser)
-- Admin paths and system paths are excluded to prevent conflicts
+- Admin paths, system paths, and webform paths are excluded to prevent conflicts
 - Form submissions may require additional handling for complex field types
 
 ## Current Focus
